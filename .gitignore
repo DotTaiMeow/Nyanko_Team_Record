@@ -1,0 +1,14 @@
+# 排除本機工具與個人私密資料（絕不上傳拆包程式與私人紀錄）
+tools/
+匯出最新遊戲資料.bat
+本機預覽_PWA.bat
+extractor/
+raw_packs/
+user_data/
+*.db
+*.db-wal
+*.db-shm
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

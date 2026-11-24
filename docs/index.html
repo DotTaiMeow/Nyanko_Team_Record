@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#151a23" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="貓戰紀錄本" />
+  <title>貓咪大戰爭 通關紀錄本</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="./assets/icon-192.png" />
+  <link rel="apple-touch-icon" href="./assets/icon-192.png" />
+  <link rel="stylesheet" href="./assets/styles.css?v=20261124b" />
+</head>
+<body>
+  <!-- 載入遮罩（首次下載靜態資料庫時顯示進度） -->
+  <div id="bootLoader" class="boot-loader">
+    <div class="boot-loader-card">
+      <img src="./assets/icon-192.png" alt="貓戰紀錄本" class="boot-loader-icon" />
+      <div class="boot-loader-title">貓咪大戰爭 通關紀錄本</div>
+      <div class="muted-text" id="bootLoaderText">正在載入台日雙區遊戲資料...</div>
+    </div>
+  </div>
+
+  <!-- 頂部應用程式列 -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="brand">
+        <img src="./assets/icon-192.png" class="brand-img" alt="" />
+        <div>
+          <div class="brand-title">貓咪大戰爭 通關紀錄本</div>
+          <div class="brand-sub" id="appVersionBadge">載入中...</div>
+        </div>
+      </div>
+
+      <nav class="main-nav" id="mainNav">
+        <button class="nav-btn active" data-view="stages">🗺️ 關卡紀錄</button>
+        <button class="nav-btn" data-view="records">📜 紀錄總覽 <span class="nav-pill" id="navRecordCount">0</span></button>
+        <button class="nav-btn" data-view="catbox">🐱 我的貓棚</button>
+        <button class="nav-btn" data-view="enemies">👾 敵人圖鑑</button>
+        <button class="nav-btn" data-view="templates">📋 隊伍模板</button>
+      </nav>
+    </div>
+
+    <div class="topbar-right">
+      <div class="global-search-wrap" id="globalSearchWrap">
+        <input
+          type="text"
+          id="globalSearchInput"
+          class="global-search"
+          placeholder="跨語言搜尋關卡、敵人、貓咪（中／日文皆可）..."
+          autocomplete="off"
+        />
+        <div id="globalSearchDropdown" class="search-dropdown hidden"></div>
+      </div>
+
+      <button id="btnMobileSearchToggle" class="icon-btn mobile-only" title="全域搜尋">🔍</button>
+
+      <div class="region-switcher" id="langSwitcher" title="切換共通項目的顯示語言（台日獨有項目仍會完整顯示並附標籤）">
+        <button class="region-btn active" data-lang="tw">繁中</button>
+        <button class="region-btn" data-lang="jp">日文</button>
+      </div>
+
+      <button id="btnOpenSettings" class="icon-btn" title="備份還原與安裝 App 說明">⚙️</button>
+      <button id="themeToggleBtn" class="icon-btn" title="切換深色／淺色主題">🌙</button>
+    </div>
+  </header>
+
+  <!-- 手機版展開搜尋列 -->
+  <div id="mobileSearchBar" class="mobile-search-bar hidden">
+    <input
+      type="text"
+      id="mobileSearchInput"
+      class="global-search"
+      placeholder="跨語言搜尋關卡、敵人、貓咪（中／日文或 ID）..."
+      autocomplete="off"
+    />
+    <button type="button" id="btnCloseMobileSearch" class="icon-btn">✕</button>
+    <div id="mobileSearchDropdown" class="search-dropdown hidden"></div>
+  </div>
+
+  <!-- 主內容區域 -->
+  <main class="app-main">
+    <!-- ==================== 視圖 1：關卡與通關紀錄 ==================== -->
+    <section id="view-stages" class="view-pane active">
+      <div class="stages-layout" id="stagesLayout" data-mobile-step="categories">
+        <!-- 左欄：關卡分類（手機版第 1 層，頂部可顯示統計概要） -->
+        <aside class="panel categories-panel">
+          <div class="panel-header">
+            <span>關卡分類</span>
+            <span class="muted-text" id="overallProgressText">0 / 0</span>
+          </div>
+          <!-- 手機版快速統計入口條（含可點獨有貓咪） -->
+          <div class="mobile-stats-strip mobile-only" id="mobileStatsStrip"></div>
+          <div class="filter-pills" id="mapFilterPills">
+            <button class="pill active" data-filter="all">全部</button>
+            <button class="pill" data-filter="has_records">有紀錄</button>
+            <button class="pill" data-filter="cleared">已通關</button>
+            <button class="pill" data-filter="uncleared">未通關</button>
+          </div>
+          <div class="scroll-list" id="categoryList"></div>
+        </aside>
+
+        <!-- 中欄：地圖與小關列表（手機版第 2 層） -->
+        <aside class="panel maps-panel">
+          <div class="panel-header">
+            <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+              <button type="button" class="btn btn-secondary btn-xs mobile-only" id="btnMobileBackToCats">← 分類</button>
+              <span id="currentCategoryTitle" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">選擇分類</span>
+            </div>
+          </div>
+          <div class="panel-search">
+            <input type="text" id="mapSearchInput" placeholder="篩選此分類地圖或小關名稱..." />
+          </div>
+          <div class="scroll-list" id="mapList"></div>
+        </aside>
+
+        <!-- 右欄：關卡詳情＋敵人列表＋通關紀錄（手機版第 3 層） -->
+        <section class="panel stage-detail-panel" id="stageDetailPanel">
+          <div class="mobile-detail-topbar mobile-only">
+            <button type="button" class="btn btn-secondary btn-xs" id="btnMobileBackToMaps">← 返回關卡清單</button>
+            <span class="muted-text" id="mobileDetailBarTitle">關卡詳情</span>
+          </div>
+
+          <div class="empty-hero" id="stageEmptyHero">
+            <div class="empty-hero-icon">🗺️</div>
+            <h2>選擇一個關卡開始檢視與記錄</h2>
+            <p>左側可依分類瀏覽所有關卡，或直接搜尋關卡名、敵人或貓咪。</p>
+            <div class="hero-stats" id="heroStats"></div>
+          </div>
+
+          <div id="stageDetailContent" class="hidden">
+            <!-- 關卡標頭卡片 -->
+            <div class="stage-header-card">
+              <div class="stage-header-top">
+                <div style="min-width:0;">
+                  <div class="stage-breadcrumb" id="sdBreadcrumb"></div>
+                  <h1 class="stage-title" id="sdTitle"></h1>
+                </div>
+                <div class="stage-header-actions">
+                  <button class="btn btn-secondary" id="btnToggleFavoriteStage" title="加入或取消收藏關卡">📌 收藏關卡</button>
+                  <button class="btn btn-primary" id="btnAddRecord">＋ 新增通關紀錄</button>
+                </div>
+              </div>
+
+              <div class="stage-meta-bar">
+                <div class="meta-chip">⚡ 統率力：<strong id="sdEnergy">0</strong></div>
+                <div class="meta-chip">🏰 城塔血量：<strong id="sdCastleHp">0</strong></div>
+                <div class="meta-chip">👥 出怪上限：<strong id="sdMaxEnemies">0</strong></div>
+                <div class="meta-chip">📏 場地寬度：<strong id="sdWidth">0</strong></div>
+                <div class="crown-selector-wrap">
+                  <span class="muted-text">星數檢視 / 標記通關：</span>
+                  <div id="sdCrownButtons" class="crown-btn-group"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 登場敵人清單 -->
+            <div class="section-card">
+              <div class="section-head">
+                <h3>👾 登場敵人配置 <span class="muted-text" id="sdEnemyMagNote"></span></h3>
+                <span class="muted-text desktop-only">點擊敵人可切換各冠數倍率與反向查關卡</span>
+              </div>
+              <div class="enemy-strip" id="sdEnemyList"></div>
+            </div>
+
+            <!-- 關卡備註與標籤 -->
+            <div class="section-card">
+              <div class="section-head">
+                <h3>📝 關卡備註與標籤</h3>
+                <button class="btn btn-secondary btn-xs" id="btnSaveStageNote">💾 儲存備註</button>
+              </div>
+              <div class="tags-input-wrap" style="margin-bottom:6px;">
+                <div id="sdStageTagsList" class="tags-list"></div>
+                <input type="text" id="sdStageTagInput" placeholder="輸入關卡標籤按 Enter..." />
+              </div>
+              <div class="quick-tags" id="sdStageQuickTags" style="margin-bottom:8px;">
+                <button type="button" class="qtag">波動關</button>
+                <button type="button" class="qtag">烈波關</button>
+                <button type="button" class="qtag">破盾必備</button>
+                <button type="button" class="qtag">惡魔盾</button>
+                <button type="button" class="qtag">終結不死</button>
+                <button type="button" class="qtag">爆擊必備</button>
+                <button type="button" class="qtag">速攻可</button>
+                <button type="button" class="qtag">高難度</button>
+                <button type="button" class="qtag">周回刷取</button>
+                <button type="button" class="qtag">卡關中</button>
+              </div>
+              <textarea id="sdStageNoteInput" rows="2" style="width:100%;" placeholder="記錄這關的重點攻略、開局節奏、必帶特性或注意事項..."></textarea>
+            </div>
+
+            <!-- 該關通關紀錄列表 -->
+            <div class="section-card">
+              <div class="section-head">
+                <h3>🏆 本關通關紀錄 <span class="badge" id="sdRecordBadge">0</span></h3>
+              </div>
+              <div id="sdRecordsList" class="records-stack"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ==================== 視圖 2：通關紀錄總覽 ==================== -->
+    <section id="view-records" class="view-pane">
+      <div class="full-pane">
+        <div class="toolbar-card">
+          <input type="text" id="recFilterQ" class="toolbar-input" placeholder="搜尋關卡、標題、筆記或標籤..." />
+          <select id="recFilterRegion" class="toolbar-select">
+            <option value="all">全部伺服器</option>
+            <option value="tw">僅台服 TW</option>
+            <option value="jp">僅日服 JP</option>
+          </select>
+          <select id="recFilterCrown" class="toolbar-select">
+            <option value="">全部冠數</option>
+            <option value="1">1 冠</option>
+            <option value="2">2 冠</option>
+            <option value="3">3 冠</option>
+            <option value="4">4 冠</option>
+          </select>
+          <select id="recFilterCleared" class="toolbar-select">
+            <option value="all">全部結果</option>
+            <option value="cleared">✅ 僅已通關</option>
+            <option value="failed">❌ 僅未通關</option>
+          </select>
+          <button class="btn btn-secondary" id="btnRecFilterFeatured">⭐ 僅看珍藏紀錄</button>
+          <div class="unit-filter-chip" id="recUnitFilterChip">
+            <button class="btn btn-secondary" id="btnPickFilterUnit">🐱 篩選特定貓咪</button>
+          </div>
+          <button class="btn btn-ghost" id="btnResetRecFilters">重設</button>
+        </div>
+        <div id="allRecordsList" class="records-grid"></div>
+      </div>
+    </section>
+
+    <!-- ==================== 視圖 3：我的貓棚 ==================== -->
+    <section id="view-catbox" class="view-pane">
+      <div class="full-pane">
+        <div class="toolbar-card">
+          <div class="region-switcher" id="catboxAccountSwitcher" title="切換要檢視與編輯等級的帳號貓棚">
+            <button class="region-btn active" data-account="tw">台服帳號</button>
+            <button class="region-btn" data-account="jp">日服帳號</button>
+          </div>
+          <input type="text" id="catboxSearch" class="toolbar-input" placeholder="跨語言搜尋貓咪中／日文名稱或編號..." />
+          <select id="catboxRarity" class="toolbar-select">
+            <option value="">全部稀有度</option>
+            <option value="0">基本</option>
+            <option value="1">EX</option>
+            <option value="2">稀有</option>
+            <option value="3">激稀有</option>
+            <option value="4">超激稀有</option>
+            <option value="5">傳說稀有</option>
+          </select>
+          <select id="catboxTrait" class="toolbar-select">
+            <option value="">全部針對屬性</option>
+            <option value="red">紅色敵人</option>
+            <option value="floating">漂浮敵人</option>
+            <option value="black">黑色敵人</option>
+            <option value="metal">鋼鐵敵人</option>
+            <option value="traitless">無屬性敵人</option>
+            <option value="angel">天使敵人</option>
+            <option value="alien">異星戰士</option>
+            <option value="zombie">不死生物</option>
+            <option value="relic">古代種</option>
+            <option value="aku">惡魔</option>
+          </select>
+          <label class="checkbox-label">
+            <input type="checkbox" id="catboxOwnedOnly" /> 只看此帳號已設定
+          </label>
+          <span class="muted-text" id="catboxCountText"></span>
+        </div>
+        <div id="catboxGrid" class="icon-card-grid"></div>
+      </div>
+    </section>
+
+    <!-- ==================== 視圖 4：敵人圖鑑 ==================== -->
+    <section id="view-enemies" class="view-pane">
+      <div class="full-pane">
+        <div class="toolbar-card">
+          <input type="text" id="enemySearch" class="toolbar-input" placeholder="搜尋敵人名稱或編號..." />
+          <select id="enemyTrait" class="toolbar-select">
+            <option value="">全部屬性</option>
+            <option value="red">紅色敵人</option>
+            <option value="floating">漂浮敵人</option>
+            <option value="black">黑色敵人</option>
+            <option value="metal">鋼鐵敵人</option>
+            <option value="traitless">無屬性敵人</option>
+            <option value="angel">天使敵人</option>
+            <option value="alien">異星戰士</option>
+            <option value="starred_alien">有星異星</option>
+            <option value="zombie">不死生物</option>
+            <option value="relic">古代種</option>
+            <option value="aku">惡魔</option>
+            <option value="超生命體">超生命體</option>
+            <option value="超獸">超獸</option>
+            <option value="超賢者">超賢者</option>
+          </select>
+          <span class="muted-text" id="enemyCountText"></span>
+        </div>
+        <div id="enemyCatalogGrid" class="icon-card-grid"></div>
+      </div>
+    </section>
+
+    <!-- ==================== 視圖 5：常用隊伍模板 ==================== -->
+    <section id="view-templates" class="view-pane">
+      <div class="full-pane">
+        <div class="toolbar-card">
+          <div style="flex:1;min-width:180px;">
+            <strong>常用隊伍模板庫</strong>
+            <span class="muted-text desktop-only"> — 同一個模板可自由套用台服或日服帳號的貓棚等級</span>
+          </div>
+          <div class="region-switcher" id="tplPreviewSwitcher">
+            <button class="region-btn active" data-tpl-preview="raw">模板原值</button>
+            <button class="region-btn" data-tpl-preview="tw">台服等級</button>
+            <button class="region-btn" data-tpl-preview="jp">日服等級</button>
+          </div>
+          <button class="btn btn-primary" id="btnNewTemplate">＋ 建立模板</button>
+        </div>
+        <div id="templatesList" class="records-stack"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 手機版固定底部 App 導覽列 -->
+  <nav class="mobile-bottom-nav mobile-only" id="mobileBottomNav">
+    <button class="m-nav-btn active" data-view="stages"><span class="m-nav-ico">🗺️</span><span>關卡</span></button>
+    <button class="m-nav-btn" data-view="records"><span class="m-nav-ico">📜</span><span>紀錄 <b id="mNavRecordCount">0</b></span></button>
+    <button class="m-nav-btn" data-view="catbox"><span class="m-nav-ico">🐱</span><span>貓棚</span></button>
+    <button class="m-nav-btn" data-view="enemies"><span class="m-nav-ico">👾</span><span>敵人</span></button>
+    <button class="m-nav-btn" data-view="templates"><span class="m-nav-ico">📋</span><span>模板</span></button>
+  </nav>
+
+  <!-- ==================== 彈窗 1：通關紀錄 / 模板編輯器 ==================== -->
+  <div id="recordModal" class="modal-backdrop hidden">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-header">
+        <h2 id="recordModalTitle">新增通關紀錄</h2>
+        <button class="icon-btn" id="btnCloseRecordModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="editor-grid">
+          <div class="editor-main">
+            <div class="form-row align-center" id="recordMetaRow">
+              <div class="form-group">
+                <label>紀錄標題（選填）</label>
+                <input type="text" id="edTitle" placeholder="例如：4星無超激穩定隊、速刷隊" />
+              </div>
+              <div class="form-group form-sm" id="edCrownGroup">
+                <label>冠數</label>
+                <select id="edCrown"></select>
+              </div>
+              <div class="form-group" style="flex:0 0 auto;" id="edRegionGroup">
+                <label>紀錄帳號標籤</label>
+                <div class="region-switcher editor-toggle-pill" id="edRegionSwitcher">
+                  <button type="button" class="region-btn active" data-region="tw">台服 TW</button>
+                  <button type="button" class="region-btn" data-region="jp">日服 JP</button>
+                </div>
+              </div>
+              <div class="form-group" style="flex:0 0 auto;" id="edClearedGroup">
+                <label>通關結果</label>
+                <div class="region-switcher editor-toggle-pill" id="edClearedSwitcher">
+                  <button type="button" class="region-btn active" data-cleared="1">✅ 已通關</button>
+                  <button type="button" class="region-btn" data-cleared="0">❌ 未通關</button>
+                </div>
+              </div>
+              <div class="form-group form-sm" id="edDateGroup">
+                <label>紀錄日期</label>
+                <input type="date" id="edClearedAt" />
+              </div>
+            </div>
+
+            <div class="form-row align-center" id="edFeaturedRow">
+              <button type="button" class="btn btn-secondary btn-xs" id="btnEdToggleFeatured">☆ 設為珍藏紀錄</button>
+              <span class="muted-text">珍藏紀錄會在該關卡置頂顯示並加註防誤刪保護</span>
+            </div>
+
+            <div class="form-row align-center">
+              <div class="form-group" style="max-width:210px">
+                <label>貓咪砲種類</label>
+                <select id="edCannon"></select>
+              </div>
+              <div class="form-group">
+                <label>使用戰鬥道具（點擊開關）</label>
+                <div class="items-toggle-bar" id="edItemsBar"></div>
+              </div>
+              <div class="form-group" style="max-width:210px" id="edApplyTemplateWrap">
+                <label>快速套用模板</label>
+                <select id="edTemplateSelect">
+                  <option value="">-- 選擇常用模板 --</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 5x2 10格隊伍編輯區 -->
+            <div class="lineup-editor-box">
+              <div class="lineup-editor-head">
+                <span><strong>通關隊伍（5×2）</strong> <span class="muted-text desktop-only">點擊格子編輯，拖曳可交換位置</span></span>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <button type="button" class="btn btn-secondary btn-xs" id="btnApplyAccountLevels">🔄 套用台服貓棚等級</button>
+                  <button type="button" class="btn btn-ghost btn-xs" id="btnClearLineup">清空</button>
+                </div>
+              </div>
+              <div class="lineup-grid-5x2" id="edLineupGrid"></div>
+              <div class="combo-bar" id="edComboBar">
+                <span class="muted-text">尚無觸發貓咪聯組</span>
+              </div>
+
+              <!-- 選中單格細部微調 -->
+              <div class="slot-detail-bar hidden" id="edSlotDetail">
+                <div class="slot-detail-head">
+                  <img id="sdSlotIcon" class="slot-mini-img" alt="" />
+                  <div style="min-width:0;flex:1;">
+                    <strong id="sdSlotName"></strong>
+                    <div class="muted-text" id="sdSlotSub"></div>
+                  </div>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn btn-secondary btn-xs" id="btnSyncSlotToCatbox">💾 同步至貓棚</button>
+                    <button class="btn btn-danger btn-xs" id="btnRemoveSlot">移除</button>
+                  </div>
+                </div>
+                <div class="slot-detail-controls">
+                  <div class="form-group">
+                    <label>形態切換</label>
+                    <div id="sdSlotForms" class="form-btn-group"></div>
+                  </div>
+                  <div class="form-group form-xs">
+                    <label>基礎等級</label>
+                    <input type="number" id="sdSlotBaseLv" min="1" max="100" value="50" />
+                  </div>
+                  <div class="form-group form-xs">
+                    <label>加值 (+)</label>
+                    <input type="number" id="sdSlotPlusLv" min="0" max="150" value="0" />
+                  </div>
+                  <div class="form-group" style="flex:1">
+                    <label>此場備註</label>
+                    <input type="text" id="sdSlotNote" placeholder="選填備註" />
+                  </div>
+                </div>
+                <div id="sdSlotTalentsWrap" class="talents-check-wrap hidden">
+                  <label>本能／超本能勾選：</label>
+                  <div id="sdSlotTalents" class="talents-pills"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 標籤、心得、影片、截圖 -->
+            <div id="recordExtraFields">
+              <div class="form-group">
+                <label>標籤（Enter 新增，或點下方常用標籤）</label>
+                <div class="tags-input-wrap">
+                  <div id="edTagsList" class="tags-list"></div>
+                  <input type="text" id="edTagInput" placeholder="輸入標籤按 Enter..." />
+                </div>
+                <div class="quick-tags" id="edQuickTags">
+                  <button type="button" class="qtag">速刷</button>
+                  <button type="button" class="qtag">穩定</button>
+                  <button type="button" class="qtag">無超激</button>
+                  <button type="button" class="qtag">4星限制</button>
+                  <button type="button" class="qtag">道具全開</button>
+                  <button type="button" class="qtag">初見</button>
+                  <button type="button" class="qtag">需控場</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>攻略心得與打法筆記</label>
+                <textarea id="edNotes" rows="3" placeholder="記錄出怪節奏、翻車點、開砲時機、可替換角色..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>參考影片連結（選填）</label>
+                <input type="url" id="edVideoUrl" placeholder="https://www.youtube.com/watch?v=..." />
+              </div>
+
+              <div class="form-group">
+                <label>通關截圖（點擊從相簿／檔案選取，電腦版支援拖曳與 Ctrl+V 貼上）</label>
+                <div class="screenshot-dropzone" id="edDropzone">
+                  <span>📷 點擊上傳截圖 / 拖曳 / Ctrl+V 貼上（自動壓縮省空間）</span>
+                  <input type="file" id="edFileInput" accept="image/*" multiple class="hidden" />
+                </div>
+                <div class="screenshots-preview" id="edScreenshotsList"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右側（手機版下方）：嵌入式貓咪快速選擇器 -->
+          <div class="editor-picker">
+            <div class="picker-header">
+              <strong>放入第 <span id="pickerActiveSlotNum">1</span> 格</strong>
+              <span class="badge badge-tw" id="pickerAccountBadge">帶入：台服貓棚</span>
+            </div>
+            <div class="picker-filters">
+              <input type="text" id="pickerSearch" placeholder="跨語言搜尋（中／日文或 ID 皆可）..." />
+              <div class="picker-filter-row">
+                <select id="pickerRarity">
+                  <option value="">全稀有度</option>
+                  <option value="0">基本</option>
+                  <option value="1">EX</option>
+                  <option value="2">稀有</option>
+                  <option value="3">激稀有</option>
+                  <option value="4">超激</option>
+                  <option value="5">傳說</option>
+                </select>
+                <select id="pickerTrait">
+                  <option value="">全屬性</option>
+                  <option value="red">紅</option>
+                  <option value="floating">浮</option>
+                  <option value="black">黑</option>
+                  <option value="metal">鋼</option>
+                  <option value="traitless">無</option>
+                  <option value="angel">天</option>
+                  <option value="alien">異</option>
+                  <option value="zombie">不死</option>
+                  <option value="relic">古代</option>
+                  <option value="aku">惡魔</option>
+                </select>
+              </div>
+              <label class="checkbox-label small">
+                <input type="checkbox" id="pickerOwnedOnly" /> 僅顯示此帳號已設定的貓
+              </label>
+            </div>
+            <div class="picker-grid" id="pickerUnitGrid"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="btnCancelRecordModal">取消</button>
+        <button class="btn btn-primary" id="btnSaveRecordModal">💾 儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 1.5：台服／日服獨有貓咪清單 ==================== -->
+  <div id="regionUnitsModal" class="modal-backdrop hidden">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <h2 id="regionUnitsModalTitle">獨有貓咪清單</h2>
+        <button class="icon-btn" id="btnCloseRegionUnitsModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="muted-text" id="regionUnitsModalDesc" style="margin-bottom:10px;"></div>
+        <div id="regionUnitsGrid" class="icon-card-grid" style="max-height:62vh;overflow-y:auto;padding-right:4px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 2：貓咪詳情 ==================== -->
+  <div id="unitModal" class="modal-backdrop hidden">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <h2 id="unitModalTitle">貓咪詳情</h2>
+        <button class="icon-btn" id="btnCloseUnitModal">✕</button>
+      </div>
+      <div class="modal-body" id="unitModalBody"></div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 3：敵人詳情 ==================== -->
+  <div id="enemyModal" class="modal-backdrop hidden">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <h2 id="enemyModalTitle">敵人詳情</h2>
+        <button class="icon-btn" id="btnCloseEnemyModal">✕</button>
+      </div>
+      <div class="modal-body" id="enemyModalBody"></div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 4：通用貓咪挑選器 ==================== -->
+  <div id="quickUnitModal" class="modal-backdrop hidden">
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <h2>選擇要篩選的貓咪</h2>
+        <button class="icon-btn" id="btnCloseQuickUnitModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="quickUnitSearch" class="toolbar-input" style="width:100%; margin-bottom:10px;" placeholder="輸入貓咪名稱或 ID..." />
+        <div id="quickUnitGrid" class="picker-grid" style="max-height:420px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 5：資料備份還原與安裝 App 說明 ==================== -->
+  <div id="settingsModal" class="modal-backdrop hidden">
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <h2>⚙️ 本機資料備份與安裝 App</h2>
+        <button class="icon-btn" id="btnCloseSettingsModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="section-card" style="background:var(--bg-elevated);">
+          <div class="section-head"><h3>💾 個人紀錄備份與跨裝置轉移</h3></div>
+          <p class="muted-text" style="margin:0 0 10px;line-height:1.55;">
+            你的所有通關紀錄、珍藏、收藏關卡、雙帳號貓棚、隊伍模板與截圖都安全儲存在<strong>這台裝置的瀏覽器本機資料庫（IndexedDB）</strong>中，不會上傳到任何伺服器。建議定期匯出備份檔，也可匯入到手機或電腦完成跨裝置搬家。
+          </p>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <button class="btn btn-primary" id="btnExportBackup">📤 匯出備份檔 (.json)</button>
+            <button class="btn btn-secondary" id="btnImportBackup">📥 匯入還原備份檔</button>
+            <input type="file" id="importBackupFile" accept=".json,application/json" class="hidden" />
+            <button class="btn btn-danger" id="btnClearAllLocalData" style="margin-left:auto;">🗑️ 清空所有個人紀錄</button>
+          </div>
+        </div>
+
+        <div class="section-card" style="background:var(--bg-elevated);">
+          <div class="section-head"><h3>📦 完整離線資料包（斷網也能看全部圖示與出怪）</h3></div>
+          <p class="muted-text" style="margin:0 0 8px;line-height:1.55;">
+            有網路開啟本工具時，系統會<strong>自動於背景下載並快取全部 6,600 關出怪表與所有貓咪／敵人圖示</strong>（約 25 MB，不影響操作）。同步達 100% 後，即使開啟飛航模式也能完整使用。
+          </p>
+          <div id="offlineCacheStatus" class="muted-text" style="margin-bottom:8px;font-weight:600;color:var(--info);">檢查離線快取狀態中...</div>
+          <div id="offlineProgressWrap" class="hidden" style="margin-bottom:10px;">
+            <div class="progress-mini" style="height:8px;"><div class="progress-mini-fill" id="offlineProgressFill" style="width:0%;background:var(--accent);"></div></div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <button class="btn btn-primary" id="btnDownloadOfflinePack">🔄 重新檢查／補齊離線資料包</button>
+            <button class="btn btn-secondary" id="btnCheckAppUpdate">✨ 檢查並更新介面</button>
+          </div>
+        </div>
+
+        <div class="section-card" style="background:var(--bg-elevated);">
+          <div class="section-head"><h3>📱 把本工具安裝成手機 App（PWA）</h3></div>
+          <div id="pwaInstallBtnWrap" class="hidden" style="margin-bottom:10px;">
+            <button class="btn btn-primary" id="btnTriggerPwaInstall">📲 一鍵安裝到主畫面</button>
+          </div>
+          <div class="muted-text" style="line-height:1.65;">
+            • <strong>iPhone（Safari）</strong>：點底部「分享」圖示 → 選擇「<strong>加入主畫面</strong>」→ 點「新增」。<br />
+            • <strong>Android（Chrome / Edge）</strong>：點右上角選單 → 選擇「<strong>安裝應用程式</strong>」或「<strong>加到主畫面</strong>」。<br />
+            • 安裝後會以<strong>全螢幕獨立 App</strong> 開啟，支援離線檢視與記錄。
+          </div>
+        </div>
+
+        <div class="muted-text" style="font-size:11.5px;line-height:1.55;">
+          <strong>版權聲明：</strong>本工具為非營利玩家自製攻略紀錄輔助工具。《貓咪大戰爭》（にゃんこ大戦争）所有角色名稱、圖像與數值版權均歸 PONOS Corporation 所有。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 截圖燈箱 -->
+  <div id="lightbox" class="lightbox hidden">
+    <img id="lightboxImg" alt="通關截圖" />
+  </div>
+
+  <!-- 背景離線同步進度微膠囊（僅在有未下載檔案時顯示，不干擾操作） -->
+  <button type="button" id="offlineSyncPill" class="offline-sync-pill hidden" title="點擊檢視離線快取進度">
+    📥 離線同步中 0%
+  </button>
+
+  <!-- Toast 通知 -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="./assets/storage.js?v=20261124b"></script>
+  <script src="./assets/app.js?v=20261124b"></script>
+</body>
+</html>

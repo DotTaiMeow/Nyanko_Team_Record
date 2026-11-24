@@ -1,0 +1,26 @@
+{
+  "name": "貓咪大戰爭 通關紀錄本",
+  "short_name": "貓戰紀錄本",
+  "description": "貓咪大戰爭台日合併關卡圖鑑、雙帳號貓棚、10格通關隊伍與聯組紀錄工具",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d111a",
+  "theme_color": "#151b28",
+  "lang": "zh-Hant",
+  "icons": [
+    {
+      "src": "./assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
