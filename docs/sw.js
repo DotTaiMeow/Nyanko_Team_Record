@@ -1,5 +1,5 @@
 /* 貓咪大戰爭 通關紀錄本 PWA Service Worker（介面與離線圖示包分層快取＋即時更新） */
-const SHELL_CACHE = "bc-logbook-shell-v4";
+const SHELL_CACHE = "bc-logbook-shell-v5";
 // 與既有離線資料包共用相同快取名稱：日後更新介面文字／樣式時，完全不會清除已下載的 25MB 圖示與出怪包
 const ASSETS_CACHE = "bc-logbook-pwa-v2";
 const KEEP_CACHES = new Set([SHELL_CACHE, ASSETS_CACHE]);
@@ -84,10 +84,10 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 2. 遊戲資料庫 JSON（含 stage_enemies/*.json）：Network-First，無網自動讀 ASSETS_CACHE
+  // 2. 遊戲資料庫 JSON（含 stage_enemies/*.json）：強制向伺服器驗證 ETag（略過 10 分鐘 HTTP 快取），無網自動讀 ASSETS_CACHE
   if (url.pathname.includes("/data/")) {
     event.respondWith(
-      fetch(req)
+      fetch(req.url, { cache: "no-cache", credentials: "same-origin" })
         .then((resp) => {
           if (resp.ok) {
             const copy = resp.clone();
