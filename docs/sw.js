@@ -1,5 +1,5 @@
 /* 貓咪大戰爭 通關紀錄本 PWA Service Worker（介面與離線圖示包分層快取＋即時更新） */
-const SHELL_CACHE = "bc-logbook-shell-v3";
+const SHELL_CACHE = "bc-logbook-shell-v4";
 // 與既有離線資料包共用相同快取名稱：日後更新介面文字／樣式時，完全不會清除已下載的 25MB 圖示與出怪包
 const ASSETS_CACHE = "bc-logbook-pwa-v2";
 const KEEP_CACHES = new Set([SHELL_CACHE, ASSETS_CACHE]);
@@ -8,9 +8,9 @@ const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
-  "./assets/styles.css?v=20261124b",
-  "./assets/storage.js?v=20261124b",
-  "./assets/app.js?v=20261124b",
+  "./assets/styles.css?v=20261124c",
+  "./assets/storage.js?v=20261124c",
+  "./assets/app.js?v=20261124c",
   "./assets/icon-192.png",
   "./assets/icon-512.png",
 ];

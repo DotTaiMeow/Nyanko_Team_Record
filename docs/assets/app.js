@@ -704,12 +704,57 @@
     renderEditorItems();
   }
 
+  // 大關分類日文對照表（切換繁中／日文時即時同步翻譯）
+  const CATEGORY_NAMES_JP = {
+    34: "レジェンドストーリー0",
+    13: "真レジェンドストーリー",
+    0: "レジェンドストーリー",
+    7: "風雲にゃんこ塔／異界にゃんこ塔",
+    30: "魔界編",
+    31: "超獣討伐ステージ",
+    24: "強襲ステージ",
+    1: "イベントステージ",
+    36: "異次元コロシアム",
+    33: "地底迷宮 グランドアビス",
+    14: "マタタビ／素材ステージ",
+    25: "発掘ステージ",
+    4: "EX／エクストラステージ",
+    3: "メインストーリー",
+    20: "日本編（ゾンビ襲来）",
+    21: "未来編（ゾンビ襲来）",
+    22: "宇宙編（ゾンビ襲来）",
+    23: "宇宙編第3章（フィリバスター）",
+    38: "宇宙編第3章（ゾンビフィリバスター）",
+    2: "コラボステージ",
+    27: "コラボ強襲ステージ",
+    37: "にゃんこ道場 検定",
+    11: "ランキングの間",
+    6: "にゃんこ道場（初心者）",
+    16: "レジェンドクエスト",
+    12: "チャレンジバトル",
+    39: "特別イベント",
+  };
+
+  function getCategoryDisplayName(cat) {
+    if (!cat) return "";
+    if (state.lang === "jp") {
+      return cat.name_jp || CATEGORY_NAMES_JP[cat.bucket_id] || cat.name || "";
+    }
+    return cat.name || "";
+  }
+
   async function switchDisplayLanguage(newLang) {
     if (newLang === state.lang) return;
     state.lang = newLang;
     localStorage.setItem("bc_lang", newLang);
     updateLangButtons();
     renderCannonAndItemControls();
+    if (state.selectedBucketId === "__favorites__") {
+      $("#currentCategoryTitle").textContent = "📌 收藏關卡";
+    } else if (state.selectedBucketId != null) {
+      const curCat = state.categoriesById.get(state.selectedBucketId);
+      $("#currentCategoryTitle").textContent = curCat ? getCategoryDisplayName(curCat) : "關卡列表";
+    }
     renderCategories();
     renderMapsList();
     if (state.selectedStageKey) await selectStage(state.selectedStageKey, false);
@@ -767,7 +812,7 @@
           return `
             <div class="cat-item ${active}" data-bucket="${c.bucket_id}">
               <div class="cat-row">
-                <span class="cat-name">${esc(c.name)}</span>
+                <span class="cat-name">${esc(getCategoryDisplayName(c))}</span>
                 ${recCnt > 0 ? `<span class="badge badge-gold">${recCnt} 筆</span>` : ""}
               </div>
               <div class="cat-sub">
@@ -786,7 +831,7 @@
       $("#currentCategoryTitle").textContent = "📌 收藏關卡";
     } else {
       const cat = state.categoriesById.get(bucketId);
-      $("#currentCategoryTitle").textContent = cat ? cat.name : "關卡列表";
+      $("#currentCategoryTitle").textContent = cat ? getCategoryDisplayName(cat) : "關卡列表";
     }
     renderCategories();
     renderMapsList();
@@ -805,7 +850,8 @@
         const m = state.mapsById.get(st.map_id);
         const cat = m ? state.categoriesById.get(m.bucket_id) : null;
         if (qLow) {
-          const hay = `${st._search} ${m ? m._search : ""} ${cat ? cat.name.toLowerCase() : ""}`;
+          const catJp = cat ? (cat.name_jp || CATEGORY_NAMES_JP[cat.bucket_id] || "") : "";
+          const hay = `${st._search} ${m ? m._search : ""} ${cat ? cat.name.toLowerCase() : ""} ${catJp.toLowerCase()}`;
           if (!hay.includes(qLow)) continue;
         }
         favList.push({ st, m, cat });
@@ -828,7 +874,7 @@
               <div class="stage-row-info">
                 <div class="stage-row-name">📌 ${regionTagHtml(st.only_region)} ${esc(stName)}</div>
                 <div class="stage-row-sub">
-                  <span>${esc(cat ? cat.name : "")} › ${esc(mName)}</span>
+                  <span>${esc(getCategoryDisplayName(cat))} › ${esc(mName)}</span>
                   ${stars ? `<span style="color:var(--accent);">${stars}</span>` : ""}
                   ${rc > 0 ? `<span class="badge badge-gold">${rc} 筆</span>` : ""}
                 </div>
@@ -951,7 +997,7 @@
       ...st,
       name: pickText(st.name_tw, st.name_jp),
       bucket_id: bucketId,
-      category_name: cat ? cat.name : "",
+      category_name: getCategoryDisplayName(cat),
       map_name: m ? pickText(m.name_tw, m.name_jp) : "",
       map_only_region: m ? m.only_region : null,
       star_count: m ? m.star_count : 1,
@@ -1092,7 +1138,7 @@
       const mName = m ? pickText(m.name_tw, m.name_jp) : "";
       stageHeaderLink = `<div style="margin-bottom:6px;">
         <a href="#" class="jump-stage-link" data-bucket="${m ? m.bucket_id : ""}" data-map="${st ? st.map_id : ""}" data-stage="${esc(rec.stage_key)}" style="color:var(--accent);font-weight:700;text-decoration:none;">
-          🗺️ ${esc(cat ? cat.name : "")} › ${esc(mName)} › ${esc(stName)}
+          🗺️ ${esc(getCategoryDisplayName(cat))} › ${esc(mName)} › ${esc(stName)}
         </a>
       </div>`;
     }
@@ -1885,7 +1931,7 @@
           map_id: st.map_id,
           map_name: m ? pickText(m.name_tw, m.name_jp) : "",
           bucket_id: m ? m.bucket_id : 0,
-          category_name: cat ? cat.name : "",
+          category_name: getCategoryDisplayName(cat),
         };
       })
       .filter(Boolean);
@@ -2048,7 +2094,7 @@
           map_id: s.map_id,
           map_name: m ? pickText(m.name_tw, m.name_jp) : "",
           bucket_id: m ? m.bucket_id : 0,
-          category_name: cat ? cat.name : "",
+          category_name: getCategoryDisplayName(cat),
           direct: s._search.includes(qLow) ? 0 : 1,
         });
         if (matchedStages.length >= 50) break;
